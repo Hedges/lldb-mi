@@ -21,6 +21,7 @@
 #include "MICmnLLDBDebugger.h"
 #include "MICmnMIResultRecord.h"
 #include "MIUtilFileStd.h"
+#include "MIUtilDebug.h"
 
 //++
 // Details: CMICmdCmdFileExecAndSymbols constructor.
@@ -118,7 +119,8 @@ bool CMICmdCmdFileExecAndSymbols::Execute() {
       return MIstatus::failure;
     }
   }
-  if (!rDbgr.SetCurrentPlatformSDKRoot(strWkDir.c_str())) {
+  const char *szSDKSymbols = CMIUtilDebug::GetSDKSymbolsPath();
+  if (!rDbgr.SetCurrentPlatformSDKRoot(szSDKSymbols)) {
 
     SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_FNFAILED),
                                    m_cmdData.strMiCmd.c_str(),

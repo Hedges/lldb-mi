@@ -24,6 +24,9 @@ class CMIUtilDebug {
   // Statics:
 public:
   static void WaitForDbgAttachInfinteLoop();
+  static const char *GetSDKSymbolsPath();
+  static void SetRemoteExePath(const char *szRemoteExe);
+  static const char *GetRemoteExePath();
 
   // Methods:
 public:
@@ -33,6 +36,9 @@ public:
 public:
   // From CMICmnBase
   /* dtor */ virtual ~CMIUtilDebug();
+
+private:
+  static CMIUtilString m_strRemoteExe;
 };
 
 //++

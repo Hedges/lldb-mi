@@ -15,6 +15,7 @@
 #include "MICmnLLDBDebugger.h"
 #include "MICmnMIResultRecord.h"
 #include "MICmnMIValueConst.h"
+#include "MIUtilDebug.h"
 
 //++
 // Details: CMICmdCmdEnvironmentCd constructor.
@@ -73,7 +74,8 @@ bool CMICmdCmdEnvironmentCd::Execute() {
   const CMIUtilString &strWkDir(pArgPathDir->GetValue());
   CMICmnLLDBDebugger &rDbg(CMICmnLLDBDebugger::Instance());
   lldb::SBDebugger &rLldbDbg = rDbg.GetTheDebugger();
-  bool bOk = rLldbDbg.SetCurrentPlatformSDKRoot(strWkDir.c_str());
+  const char *szSDKSymbols = CMIUtilDebug::GetSDKSymbolsPath();
+  bool bOk = rLldbDbg.SetCurrentPlatformSDKRoot(szSDKSymbols);
   if (bOk) {
     const CMIUtilString &rStrKeyWkDir(
         m_rLLDBDebugSessionInfo.m_constStrSharedDataKeyWkDir);

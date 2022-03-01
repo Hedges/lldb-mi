@@ -58,6 +58,75 @@ void CMIUtilDebug::WaitForDbgAttachInfinteLoop() {
   }
 }
 
+//++
+// Details: Return path to SDK Root containing symbols used for debugging.
+// Type:    Static method.
+// Args:    None.
+// Return:  Path to SDK Root.
+// Throws:  None.
+//--
+const char *CMIUtilDebug::GetSDKSymbolsPath()
+{
+    static char szSDKSymbols[MAX_PATH];
+    char *pszEnv = getenv("APPLE_SDK");
+    if(pszEnv)
+    {
+        strcpy(szSDKSymbols, pszEnv);
+    }
+    else
+    {
+        strcpy(szSDKSymbols, "C:/AppleSDK/");
+    }
+    if(szSDKSymbols[strlen(szSDKSymbols)-1] != '/')
+    {
+        strcat(szSDKSymbols, "/");
+    }
+    strcat(szSDKSymbols, "Symbols");
+    return szSDKSymbols;
+}
+
+CMIUtilString CMIUtilDebug::m_strRemoteExe;
+
+//++
+// Details: Sets path to executable installed on remote device.
+// Type:    Static method.
+// Args:    None.
+// Return:  None.
+// Throws:  None.
+//--
+void CMIUtilDebug::SetRemoteExePath(const char *szRemoteExe)
+{
+    if(szRemoteExe[0] != '@')
+    {
+        m_strRemoteExe = szRemoteExe;
+    }
+    else
+    {
+        FILE *f = fopen(&szRemoteExe[1], "rb");
+        if(f)
+        {
+            char buff[MAX_PATH];
+            fgets(buff, sizeof(buff), f);
+            //https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
+            buff[strcspn(buff, "\r\n")] = 0;
+            m_strRemoteExe = buff;
+            fclose(f);
+        }
+    }
+}
+
+//++
+// Details: Return path to executable installed on remote device.
+// Type:    Static method.
+// Args:    None.
+// Return:  Path to executable installed on remote device.
+// Throws:  None.
+//--
+const char *CMIUtilDebug::GetRemoteExePath()
+{
+    return m_strRemoteExe.c_str();
+}
+
 // Instantiations:
 CMICmnLog &CMIUtilDebugFnTrace::ms_rLog = CMICmnLog::Instance();
 MIuint CMIUtilDebugFnTrace::ms_fnDepthCnt = 0;

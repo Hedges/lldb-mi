@@ -99,6 +99,8 @@ const CMICmnResources::SRsrcTextData
                                 "lldb commands in the\n\t"
                                 "given file, after any file provided on the "
                                 "command line has been\n\tloaded."},
+        {IDE_MI_APP_ARG_REMOTE_EXE, "-r --remote-exe <filename>\n\tSet remote exe location."},
+        {IDE_MI_APP_ARG_AUTO_DSYM, "-a --auto-dsym \n\tAutomatically load symbols."},
         {IDE_MI_APP_ARG_APP_LOG, "--log\n\tUse this argument to tell the MI "
                                  "Driver to update it's log\n\tfile '%s'."},
         {IDE_MI_APP_ARG_APP_LOG_DIR,

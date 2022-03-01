@@ -29,6 +29,7 @@
 #include "MIDriver.h"
 #include "MIUtilDebug.h"
 #include "MIUtilSingletonHelper.h"
+#include "MIUtilDebug.h"
 
 // Instantiations:
 #if _DEBUG
@@ -413,6 +414,7 @@ lldb::SBError CMIDriver::ParseArgs(const int argc, const char *argv[],
   // Look for the command line options
   bool bHaveExecutableFileNamePath = false;
   bool bHaveExecutableLongOption = false;
+  bool bAutoDSym = false;
 
   if (bHaveArgs) {
     // Search right to left to look for filenames
@@ -439,6 +441,13 @@ lldb::SBError CMIDriver::ParseArgs(const int argc, const char *argv[],
           i--; // skip '-s' on the next loop
           continue;
         }
+        // Is this the command file for the '--remote-exe' options?
+        else if(strPrevArg == "-r" || strPrevArg == "--remote-exe")
+        {
+            CMIUtilDebug::SetRemoteExePath(strArg.c_str());
+            i--; // skip '-r' on the next loop
+            continue;
+        }
         // Else, must be the executable
         bHaveExecutableFileNamePath = true;
         m_strCmdLineArgExecuteableFileNamePath = strArg;
@@ -464,11 +473,22 @@ lldb::SBError CMIDriver::ParseArgs(const int argc, const char *argv[],
       } else if (strArg == "--synchronous") {
         CMICmnLLDBDebugSessionInfo::Instance().GetDebugger().SetAsync(false);
       }
+      else if(strArg == "-a" || strArg == "--auto-dsym")
+      {
+          bAutoDSym = true;
+          continue;
+      }
     }
   }
 
   if (bHaveExecutableFileNamePath && bHaveExecutableLongOption) {
     SetDriverDebuggingArgExecutable();
+  }
+
+  if(bAutoDSym)
+  {
+      m_strCmdLineArgCommandString = CMIUtilString::Format("add-dsym %s.dwarf", m_strCmdLineArgExecuteableFileNamePath.c_str());
+      m_bHaveCommandStringOnCmdLine = true;
   }
 
   return errStatus;

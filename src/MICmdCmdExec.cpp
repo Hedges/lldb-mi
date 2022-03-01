@@ -19,6 +19,7 @@
 
 // Third Party Headers:
 #include "lldb/API/SBCommandInterpreter.h"
+#include "lldb/API/SBCommandReturnObject.h"
 #include "lldb/API/SBProcess.h"
 #include "lldb/API/SBStream.h"
 #include "lldb/API/SBThread.h"
@@ -39,6 +40,7 @@
 #include "MICmnMIValueConst.h"
 #include "MICmnStreamStdout.h"
 #include "MIDriver.h"
+#include "MIUtilDebug.h"
 
 //++
 // Details: CMICmdCmdExecRun constructor.
@@ -116,8 +118,8 @@ bool CMICmdCmdExecRun::Execute() {
   // Run to first instruction or main() requested?
   CMICMDBASE_GETOPTION(pArgStart, OptionLong, m_constStrArgStart);
   if (pArgStart->GetFound()) {
-    launchInfo.SetLaunchFlags(launchInfo.GetLaunchFlags() |
-                              lldb::eLaunchFlagStopAtEntry);
+    launchInfo.SetLaunchFlags(launchInfo.GetLaunchFlags()/* |
+                              lldb::eLaunchFlagStopAtEntry*/);
   }
 
   if (rSessionInfo.GetCreateTty()) {
@@ -125,6 +127,14 @@ bool CMICmdCmdExecRun::Execute() {
                               lldb::eLaunchFlagLaunchInTTY |
                               lldb::eLaunchFlagCloseTTYOnExit);
   }
+
+  //lldb::SBCommandInterpreter inter = rSessionInfo.GetDebugger().GetCommandInterpreter();
+  //lldb::SBCommandReturnObject result;
+  //inter.HandleCommand("add-dsym j:/RNGNMobile/bin/RNGN.dSYM/Contents/Resources/DWARF/RNGN", result);
+  //const char *e = result.GetError();
+
+  launchInfo.SetLaunchFlags(launchInfo.GetLaunchFlags() | lldb::eLaunchFlagDebug | lldb::eLaunchFlagDisableASLR | lldb::eLaunchFlagDetachOnError);
+  launchInfo.SetExecutableFile(CMIUtilDebug::GetRemoteExePath(), true);
 
   lldb::SBProcess process = rSessionInfo.GetTarget().Launch(launchInfo, error);
   if (!process.IsValid()) {
