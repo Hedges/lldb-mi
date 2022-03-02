@@ -600,9 +600,11 @@ bool CMIDriver::DoMainLoop() {
           strcat(szInitFile, "\\");
       }
       strcat(szInitFile, ".lldbinit-mi");
-      m_strCmdLineArgCommandFileNamePath = szInitFile;
-      const bool bAsyncMode = false;
-      ExecuteCommandFile(bAsyncMode);
+      if(GetFileAttributesA(szInitFile) != INVALID_FILE_ATTRIBUTES)
+      {
+          m_strCmdLineArgCommandFileNamePath = szInitFile;
+          ExecuteCommandFile(false);
+      }
   }
 
   // While the app is active
