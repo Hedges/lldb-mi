@@ -564,6 +564,26 @@ bool CMIDriver::DoMainLoop() {
 
   bool bOk = MIstatus::success;
 
+  // Execute .lldbinit-mi
+  char szInitFile[MAX_PATH];
+
+  GetModuleFileNameA(NULL, szInitFile, sizeof(szInitFile));
+  char *szFileName = strrchr(szInitFile, '\\');
+  if(szFileName)
+  {
+      *szFileName = 0;
+  }
+  if(szInitFile[strlen(szInitFile)-1] != '\\')
+  {
+      strcat(szInitFile, "\\");
+  }
+  strcat(szInitFile, ".lldbinit-mi");
+  if(GetFileAttributesA(szInitFile) != INVALID_FILE_ATTRIBUTES)
+  {
+      m_strCmdLineArgCommandFileNamePath = szInitFile;
+      ExecuteCommandFile(false);
+  }
+
   if (HaveExecutableFileNamePathOnCmdLine()) {
     if (!LocalDebugSessionStartupExecuteCommands()) {
       SetErrorDescription(MIRSRC(IDS_MI_INIT_ERR_LOCAL_DEBUG_SESSION));
@@ -584,27 +604,6 @@ bool CMIDriver::DoMainLoop() {
   if (m_bHaveCommandFileNamePathOnCmdLine) {
     const bool bAsyncMode = false;
     ExecuteCommandFile(bAsyncMode);
-  }
-  else
-  {
-      char szInitFile[MAX_PATH];
-
-      GetModuleFileNameA(NULL, szInitFile, sizeof(szInitFile));
-      char *szFileName = strrchr(szInitFile, '\\');
-      if(szFileName)
-      {
-          *szFileName = 0;
-      }
-      if(szInitFile[strlen(szInitFile)-1] != '\\')
-      {
-          strcat(szInitFile, "\\");
-      }
-      strcat(szInitFile, ".lldbinit-mi");
-      if(GetFileAttributesA(szInitFile) != INVALID_FILE_ATTRIBUTES)
-      {
-          m_strCmdLineArgCommandFileNamePath = szInitFile;
-          ExecuteCommandFile(false);
-      }
   }
 
   // While the app is active

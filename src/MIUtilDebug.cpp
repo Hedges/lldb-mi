@@ -65,24 +65,20 @@ void CMIUtilDebug::WaitForDbgAttachInfinteLoop() {
 // Return:  Path to SDK Root.
 // Throws:  None.
 //--
-const char *CMIUtilDebug::GetSDKSymbolsPath()
+const char *CMIUtilDebug::GetSDKRootPath()
 {
-    static char szSDKSymbols[MAX_PATH];
-    char *pszEnv = getenv("APPLE_SDK");
-    if(pszEnv)
+    static char szSDKRootPath[MAX_PATH];
+    char *pszEnv = getenv("APPLESDKROOT");
+    if(!pszEnv)
     {
-        strcpy(szSDKSymbols, pszEnv);
+        pszEnv = getenv("APPLESDK");
+        if(!pszEnv)
+        {
+            pszEnv = (char *)"C:\\AppleSDK";
+        }
     }
-    else
-    {
-        strcpy(szSDKSymbols, "C:/AppleSDK/");
-    }
-    if(szSDKSymbols[strlen(szSDKSymbols)-1] != '/')
-    {
-        strcat(szSDKSymbols, "/");
-    }
-    strcat(szSDKSymbols, "Symbols");
-    return szSDKSymbols;
+    strcpy(szSDKRootPath, pszEnv);
+    return szSDKRootPath;
 }
 
 CMIUtilString CMIUtilDebug::m_strRemoteExe;

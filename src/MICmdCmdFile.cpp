@@ -119,8 +119,7 @@ bool CMICmdCmdFileExecAndSymbols::Execute() {
       return MIstatus::failure;
     }
   }
-  const char *szSDKSymbols = CMIUtilDebug::GetSDKSymbolsPath();
-  if (!rDbgr.SetCurrentPlatformSDKRoot(szSDKSymbols)) {
+  if (!rDbgr.SetCurrentPlatformSDKRoot(CMIUtilDebug::GetSDKRootPath())) {
 
     SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_FNFAILED),
                                    m_cmdData.strMiCmd.c_str(),

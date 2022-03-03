@@ -74,8 +74,7 @@ bool CMICmdCmdEnvironmentCd::Execute() {
   const CMIUtilString &strWkDir(pArgPathDir->GetValue());
   CMICmnLLDBDebugger &rDbg(CMICmnLLDBDebugger::Instance());
   lldb::SBDebugger &rLldbDbg = rDbg.GetTheDebugger();
-  const char *szSDKSymbols = CMIUtilDebug::GetSDKSymbolsPath();
-  bool bOk = rLldbDbg.SetCurrentPlatformSDKRoot(szSDKSymbols);
+  bool bOk = rLldbDbg.SetCurrentPlatformSDKRoot(CMIUtilDebug::GetSDKRootPath());
   if (bOk) {
     const CMIUtilString &rStrKeyWkDir(
         m_rLLDBDebugSessionInfo.m_constStrSharedDataKeyWkDir);

@@ -24,7 +24,7 @@ class CMIUtilDebug {
   // Statics:
 public:
   static void WaitForDbgAttachInfinteLoop();
-  static const char *GetSDKSymbolsPath();
+  static const char *GetSDKRootPath();
   static void SetRemoteExePath(const char *szRemoteExe);
   static const char *GetRemoteExePath();
 
