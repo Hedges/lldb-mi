@@ -1283,13 +1283,15 @@ CMICmdBase *CMICmdCmdDataListRegisterChanged::CreateSelf() {
 // Throws:  None.
 //--
 CMICmdCmdDataWriteMemoryBytes::CMICmdCmdDataWriteMemoryBytes()
-    : m_constStrArgAddr("address"), m_constStrArgContents("contents"),
-      m_constStrArgCount("count") {
-  // Command factory matches this name with that received from the stdin stream
-  m_strMiCmd = "data-write-memory-bytes";
+    : m_constStrArgAddrExpr("address"),
+    m_constStrArgContents("contents"),
+    m_pBufferMemory(nullptr)
+{
+    // Command factory matches this name with that received from the stdin stream
+    m_strMiCmd = "data-write-memory-bytes";
 
-  // Required by the CMICmdFactory when registering *this command
-  m_pSelfCreatorFn = &CMICmdCmdDataWriteMemoryBytes::CreateSelf;
+    // Required by the CMICmdFactory when registering *this command
+    m_pSelfCreatorFn = &CMICmdCmdDataWriteMemoryBytes::CreateSelf;
 }
 
 //++
@@ -1299,7 +1301,14 @@ CMICmdCmdDataWriteMemoryBytes::CMICmdCmdDataWriteMemoryBytes()
 // Return:  None.
 // Throws:  None.
 //--
-CMICmdCmdDataWriteMemoryBytes::~CMICmdCmdDataWriteMemoryBytes() {}
+CMICmdCmdDataWriteMemoryBytes::~CMICmdCmdDataWriteMemoryBytes()
+{
+    if(m_pBufferMemory != nullptr)
+    {
+        delete[] m_pBufferMemory;
+        m_pBufferMemory = nullptr;
+    }
+}
 
 //++
 // Details: The invoker requires this function. The parses the command line
@@ -1311,14 +1320,37 @@ CMICmdCmdDataWriteMemoryBytes::~CMICmdCmdDataWriteMemoryBytes() {}
 //          MIstatus::failure - Functional failed.
 // Throws:  None.
 //--
-bool CMICmdCmdDataWriteMemoryBytes::ParseArgs() {
-  m_setCmdArgs.Add(
-      new CMICmdArgValString(m_constStrArgAddr, true, true, false, true));
-  m_setCmdArgs.Add(
-      new CMICmdArgValString(m_constStrArgContents, true, true, true, true));
-  m_setCmdArgs.Add(
-      new CMICmdArgValString(m_constStrArgCount, false, true, false, true));
-  return ParseValidateCmdOptions();
+bool CMICmdCmdDataWriteMemoryBytes::ParseArgs()
+{
+    m_setCmdArgs.Add(new CMICmdArgValString(m_constStrArgAddrExpr, true, true, false, true));
+    m_setCmdArgs.Add(new CMICmdArgValString(m_constStrArgContents, true, true, false, true));
+    return ParseValidateCmdOptions();
+}
+
+static unsigned char HexCharToValue(const char hex)
+{
+    if(hex >= '0' && hex <= '9')
+    {
+        return (hex - '0');
+    }
+    else if(hex >= 'a' && hex <= 'f')
+    {
+        return (hex - 'a' + 0xA);
+    }
+    else if(hex >= 'A' && hex <= 'F')
+    {
+        return (hex - 'A' + 0xA);
+    }
+    return 0;
+}
+
+static void HexToMem(unsigned char *trg, const char *src)
+{
+    while(*src)
+    {
+        *trg++ = (HexCharToValue(src[0]) << 4) | HexCharToValue(src[1]);
+        src += 2;
+    }
 }
 
 //++
@@ -1332,17 +1364,64 @@ bool CMICmdCmdDataWriteMemoryBytes::ParseArgs() {
 //          MIstatus::failure - Functional failed.
 // Throws:  None.
 //--
-bool CMICmdCmdDataWriteMemoryBytes::Execute() {
-  // Do nothing - not reproduceable (yet) in Eclipse
-  // CMICMDBASE_GETOPTION( pArgOffset, OptionShort, m_constStrArgOffset );
-  // CMICMDBASE_GETOPTION( pArgAddr, String, m_constStrArgAddr );
-  // CMICMDBASE_GETOPTION( pArgNumber, String, m_constStrArgNumber );
-  // CMICMDBASE_GETOPTION( pArgContents, String, m_constStrArgContents );
-  //
-  // Numbers extracts as string types as they could be hex numbers
-  // '&' is not recognised and so has to be removed
+bool CMICmdCmdDataWriteMemoryBytes::Execute()
+{
+    CMICMDBASE_GETOPTION(pArgAddr, String, m_constStrArgAddrExpr);
+    CMICMDBASE_GETOPTION(pArgContents, String, m_constStrArgContents);
 
-  return MIstatus::success;
+    const CMIUtilString &strAddr(pArgAddr->GetValue());
+    const CMIUtilString &strContents(pArgContents->GetValue());
+
+    CMICmnLLDBDebugSessionInfo &rSessionInfo(CMICmnLLDBDebugSessionInfo::Instance());
+    lldb::SBProcess sbProcess = rSessionInfo.GetProcess();
+    lldb::SBThread thread = sbProcess.GetSelectedThread();
+    lldb::SBFrame frame = thread.GetSelectedFrame();
+
+    MIuint64 Addr = 0;
+
+    lldb::SBValue value = frame.EvaluateExpression(strAddr.c_str());
+    lldb::SBError error = value.GetError();
+    if(error.Success())
+    {
+        if(!CMICmnLLDBProxySBValue::GetValueAsUnsigned(value, Addr))
+        {
+            error.SetError(2, lldb::eErrorTypeInvalid);
+        }
+    }
+    if(error.Fail())
+    {
+        SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_FIND_EXPR_ADDRESS), m_cmdData.strMiCmd.c_str(), strAddr.c_str()));
+        return MIstatus::failure;
+    }
+
+    size_t Size = strContents.size()/2;
+
+    m_pBufferMemory = new unsigned char[Size];
+    if(m_pBufferMemory == nullptr)
+    {
+        SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_MEMORY_ALLOC_FAILURE), m_cmdData.strMiCmd.c_str(), Size));
+        return MIstatus::failure;
+    }
+
+    HexToMem(m_pBufferMemory, strContents.c_str());
+
+    lldb::addr_t addr = static_cast<lldb::addr_t>(Addr);
+    const size_t nBytesWritten = sbProcess.WriteMemory(addr, (const void *)m_pBufferMemory, Size, error);
+    if(nBytesWritten != Size)
+    {
+        SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_LLDB_ERR_NOT_WRITE_WHOLEBLK), m_cmdData.strMiCmd.c_str(), Size, addr));
+        return MIstatus::failure;
+    }
+    if(error.Fail())
+    {
+        lldb::SBStream err;
+        const bool bOk = error.GetDescription(err);
+        MIunused(bOk);
+        SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_LLDB_ERR_WRITE_MEM_BYTES), m_cmdData.strMiCmd.c_str(), Size, Addr, err.GetData()));
+        return MIstatus::failure;
+    }
+
+    return MIstatus::success;
 }
 
 //++
@@ -1355,15 +1434,16 @@ bool CMICmdCmdDataWriteMemoryBytes::Execute() {
 //          MIstatus::failure - Functional failed.
 // Throws:  None.
 //--
-bool CMICmdCmdDataWriteMemoryBytes::Acknowledge() {
-  const CMICmnMIValueConst miValueConst(MIRSRC(IDS_WORD_NOT_IMPLEMENTED));
-  const CMICmnMIValueResult miValueResult("msg", miValueConst);
-  const CMICmnMIResultRecord miRecordResult(
-      m_cmdData.strMiCmdToken, CMICmnMIResultRecord::eResultClass_Error,
-      miValueResult);
-  m_miResultRecord = miRecordResult;
+bool CMICmdCmdDataWriteMemoryBytes::Acknowledge()
+{
+    const CMICmnMIValueConst miValueConst(MIRSRC(IDS_WORD_NOT_IMPLEMENTED));
+    const CMICmnMIValueResult miValueResult("msg", miValueConst);
+    const CMICmnMIResultRecord miRecordResult(
+        m_cmdData.strMiCmdToken, CMICmnMIResultRecord::eResultClass_Error,
+        miValueResult);
+    m_miResultRecord = miRecordResult;
 
-  return MIstatus::success;
+    return MIstatus::success;
 }
 
 //++
@@ -1375,8 +1455,9 @@ bool CMICmdCmdDataWriteMemoryBytes::Acknowledge() {
 // Return:  CMICmdBase * - Pointer to a new command.
 // Throws:  None.
 //--
-CMICmdBase *CMICmdCmdDataWriteMemoryBytes::CreateSelf() {
-  return new CMICmdCmdDataWriteMemoryBytes();
+CMICmdBase *CMICmdCmdDataWriteMemoryBytes::CreateSelf()
+{
+    return new CMICmdCmdDataWriteMemoryBytes();
 }
 
 //++
@@ -1479,17 +1560,13 @@ bool CMICmdCmdDataWriteMemory::Execute() {
       addr, (const void *)m_pBufferMemory, (size_t)m_nCount, error);
   if (nBytesWritten != static_cast<size_t>(m_nCount)) {
     SetError(
-        CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_LLDB_ERR_NOT_WRITE_WHOLEBLK),
-                              m_cmdData.strMiCmd.c_str(), m_nCount, addr));
+        CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_LLDB_ERR_NOT_WRITE_WHOLEBLK), m_cmdData.strMiCmd.c_str(), m_nCount, addr));
     return MIstatus::failure;
   }
   if (error.Fail()) {
     lldb::SBStream err;
-    const bool bOk = error.GetDescription(err);
-    MIunused(bOk);
-    SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_LLDB_ERR_WRITE_MEM_BYTES),
-                                   m_cmdData.strMiCmd.c_str(), m_nCount, addr,
-                                   err.GetData()));
+    error.GetDescription(err);
+    SetError(CMIUtilString::Format(MIRSRC(IDS_CMD_ERR_LLDB_ERR_WRITE_MEM_BYTES), m_cmdData.strMiCmd.c_str(), m_nCount, addr, err.GetData()));
     return MIstatus::failure;
   }
 
