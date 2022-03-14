@@ -128,10 +128,20 @@ bool CMICmdCmdExecRun::Execute() {
                               lldb::eLaunchFlagCloseTTYOnExit);
   }
 
-  //lldb::SBCommandInterpreter inter = rSessionInfo.GetDebugger().GetCommandInterpreter();
-  //lldb::SBCommandReturnObject result;
-  //inter.HandleCommand("add-dsym j:/RNGNMobile/bin/RNGN.dSYM/Contents/Resources/DWARF/RNGN", result);
-  //const char *e = result.GetError();
+#if 0
+  const char *envp[32];
+  int i = 0;
+  //envp[i++] = "DYLD_PRINT_LIBRARIES=YES";
+  envp[i++] = "DYLD_PRINT_WARNINGS=YES";
+  envp[i++] = "DYLD_PRINT_STATISTICS=YES";
+  envp[i++] = "DYLD_LIBRARY_PATH=/usr/lib/system/introspection";
+  //envp[i++] = "DYLD_INSERT_LIBRARIES=/Developer/usr/lib/libBacktraceRecording.dylib:/Developer/usr/lib/libMainThreadChecker.dylib:/Developer/Library/PrivateFrameworks/DTDDISupport.framework/libViewDebuggerSupport.dylib";
+  envp[i++] = "DYLD_INSERT_LIBRARIES=/Developer/Library/PrivateFrameworks/DTDDISupport.framework/libViewDebuggerSupport.dylib";
+  envp[i++] = "NSUnbufferedIO=YES";
+  envp[i++] = "OS_ACTIVITY_DT_MODE=enable";
+  envp[i] = NULL;
+  launchInfo.SetEnvironmentEntries(envp, false);
+#endif
 
   launchInfo.SetLaunchFlags(launchInfo.GetLaunchFlags() | lldb::eLaunchFlagDebug | lldb::eLaunchFlagDisableASLR | lldb::eLaunchFlagDetachOnError);
   launchInfo.SetExecutableFile(CMIUtilDebug::GetRemoteExePath(), true);
