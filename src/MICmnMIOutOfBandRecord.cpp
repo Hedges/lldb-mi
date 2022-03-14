@@ -88,7 +88,7 @@ MapOutOfBandToToken(CMICmnMIOutOfBandRecord::OutOfBand_e veType) {
   case CMICmnMIOutOfBandRecord::eOutOfBand_TargetModuleUnloaded:
     return "=";
   case CMICmnMIOutOfBandRecord::eOutOfBand_TargetStreamOutput:
-    return "";
+    return "@";
   case CMICmnMIOutOfBandRecord::eOutOfBand_ConsoleStreamOutput:
     return "~";
   case CMICmnMIOutOfBandRecord::eOutOfBand_LogStreamOutput:
