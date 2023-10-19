@@ -79,11 +79,13 @@ set(llvm_deps "")
 
 set_property(TARGET lldb-mi PROPERTY CXX_STANDARD 17)
 
-if (USE_LLDB_FRAMEWORK)
-  find_library(lib_lldb NAMES LLDB PATHS ${LLVM_BINARY_DIR}/Library/Frameworks)
-else()
-  find_library(lib_lldb NAMES lldb liblldb HINTS ${LLVM_LIBRARY_DIRS})
-endif()
+#if (USE_LLDB_FRAMEWORK)
+#  find_library(lib_lldb NAMES LLDB PATHS ${LLVM_BINARY_DIR}/Library/Frameworks)
+#else()
+#  find_library(lib_lldb NAMES lldb liblldb HINTS ${LLVM_LIBRARY_DIRS})
+#endif()
+
+set(lib_lldb "$(SolutionDir)../../llvm/build/$(Configuration)/lib/liblldb.lib")
 
 find_library(lib_llvm_shared LLVM HINTS ${LLVM_LIBRARY_DIRS})
 
