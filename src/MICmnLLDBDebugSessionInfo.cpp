@@ -442,7 +442,7 @@ bool CMICmnLLDBDebugSessionInfo::MIResponseFormThreadInfo(
   if (veThreadInfoFormat != eThreadInfoFormat_NoFrames) {
     CMIUtilString strFrames;
     if (!GetThreadFrames(vCmdData, rThread.GetIndexID(),
-                         eFrameInfoFormat_AllArgumentsInSimpleForm, strFrames))
+        eFrameInfoFormat_NoArguments, strFrames))
       return MIstatus::failure;
 
     const CMICmnMIValueConst miValueConst3(strFrames, true);
