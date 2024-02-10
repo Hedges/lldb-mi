@@ -138,11 +138,11 @@ bool CMICmdCmdTargetSelect::Execute() {
     }
   }
 
-  // Set the shared object path if we were given one.
-  CMIUtilString strSolibPath;
-  if (rSessionInfo.SharedDataRetrieve<CMIUtilString>(
-          rSessionInfo.m_constStrSharedDataSolibPath, strSolibPath))
-    target.AppendImageSearchPath(".", strSolibPath.c_str(), error);
+  //// Set the shared object path if we were given one.
+  //CMIUtilString strSolibPath;
+  //if (rSessionInfo.SharedDataRetrieve<CMIUtilString>(
+  //        rSessionInfo.m_constStrSharedDataSolibPath, strSolibPath))
+  //  target.AppendImageSearchPath(".", strSolibPath.c_str(), error);
 
   return HandleSBError(error);
 }
